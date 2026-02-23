@@ -81,52 +81,52 @@ Happy writing! 🚀`);
         // Headers
         .replace(
           /^(#{1,6})\s+(.+)$/gm,
-          '<span class="text-blue-600 font-bold">$1</span> <span class="text-purple-700 font-semibold">$2</span>'
+          '<span class="text-blue-600 font-bold">$1</span> <span class="text-purple-700 font-semibold">$2</span>',
         )
         // Bold text
         .replace(
           /\*\*(.*?)\*\*/g,
-          '<span class="text-orange-600 font-bold">**</span><span class="text-orange-700 font-bold">$1</span><span class="text-orange-600 font-bold">**</span>'
+          '<span class="text-orange-600 font-bold">**</span><span class="text-orange-700 font-bold">$1</span><span class="text-orange-600 font-bold">**</span>',
         )
         // Italic text
         .replace(
           /\*(.*?)\*/g,
-          '<span class="text-green-600">*</span><span class="text-green-700 italic">$1</span><span class="text-green-600">*</span>'
+          '<span class="text-green-600">*</span><span class="text-green-700 italic">$1</span><span class="text-green-600">*</span>',
         )
         // Strikethrough
         .replace(
           /~~(.*?)~~/g,
-          '<span class="text-red-600">~~</span><span class="text-red-700 line-through">$1</span><span class="text-red-600">~~</span>'
+          '<span class="text-red-600">~~</span><span class="text-red-700 line-through">$1</span><span class="text-red-600">~~</span>',
         )
         // Inline code
         .replace(
           /`([^`]+)`/g,
-          '<span class="text-pink-600 bg-pink-50 px-1 rounded">`</span><span class="text-pink-800 bg-pink-100 px-1 font-mono">$1</span><span class="text-pink-600 bg-pink-50 px-1 rounded">`</span>'
+          '<span class="text-pink-600 bg-pink-50 px-1 rounded">`</span><span class="text-pink-800 bg-pink-100 px-1 font-mono">$1</span><span class="text-pink-600 bg-pink-50 px-1 rounded">`</span>',
         )
         // Links
         .replace(
           /\[([^\]]+)\]\(([^)]+)\)/g,
-          '<span class="text-blue-600">[</span><span class="text-blue-800 underline">$1</span><span class="text-blue-600">](</span><span class="text-cyan-600">$2</span><span class="text-blue-600">)</span>'
+          '<span class="text-blue-600">[</span><span class="text-blue-800 underline">$1</span><span class="text-blue-600">](</span><span class="text-cyan-600">$2</span><span class="text-blue-600">)</span>',
         )
         // List items
         .replace(
           /^(\s*)([-*+])\s+(.+)$/gm,
-          '$1<span class="text-indigo-600 font-bold">$2</span> <span class="text-gray-800">$3</span>'
+          '$1<span class="text-indigo-600 font-bold">$2</span> <span class="text-gray-800">$3</span>',
         )
         // Ordered lists
         .replace(
           /^(\s*)(\d+\.)\s+(.+)$/gm,
-          '$1<span class="text-purple-600 font-bold">$2</span> <span class="text-gray-800">$3</span>'
+          '$1<span class="text-purple-600 font-bold">$2</span> <span class="text-gray-800">$3</span>',
         )
         // Blockquotes
         .replace(
           /^>\s+(.+)$/gm,
-          '<span class="text-emerald-600 font-bold">&gt;</span> <span class="text-emerald-700 italic">$1</span>'
+          '<span class="text-emerald-600 font-bold">&gt;</span> <span class="text-emerald-700 italic">$1</span>',
         )
         // Code blocks
         .replace(
           /```(\w+)?\n([\s\S]*?)\n```/g,
-          '<span class="text-violet-600 bg-violet-50 px-2 py-1 rounded">```$1</span>\n<span class="text-gray-800 bg-gray-100 block p-2 rounded font-mono text-sm">$2</span>\n<span class="text-violet-600 bg-violet-50 px-2 py-1 rounded">```</span>'
+          '<span class="text-violet-600 bg-violet-50 px-2 py-1 rounded">```$1</span>\n<span class="text-gray-800 bg-gray-100 block p-2 rounded font-mono text-sm">$2</span>\n<span class="text-violet-600 bg-violet-50 px-2 py-1 rounded">```</span>',
         )
         // Horizontal rules
         .replace(/^---+$/gm, '<span class="text-gray-400 font-bold">$&</span>')
@@ -221,7 +221,7 @@ Happy writing! 🚀`);
       </div>
       <div
         ref={highlightRef}
-        className="absolute inset-0 p-4 font-mono text-sm leading-relaxed pointer-events-none overflow-auto whitespace-pre-wrap break-words"
+        className="absolute inset-0 p-4 font-mono text-sm leading-relaxed pointer-events-none overflow-auto whitespace-pre-wrap wrap-break-word"
         style={{
           minHeight: "calc(100% - 60px)",
           color: "transparent",
@@ -254,7 +254,6 @@ Happy writing! 🚀`);
         <div className="prose prose-slate dark:prose-invert max-w-none">
           <ReactMarkdown
             components={{
-              // Custom component styling to work better with Tailwind
               h1: ({ children }) => (
                 <h1 className="text-3xl font-bold mb-4 mt-6 first:mt-0 text-foreground border-b pb-2">
                   {children}
@@ -379,7 +378,6 @@ Happy writing! 🚀`);
 
       <CardContent className="flex-1 p-0 overflow-hidden">
         <div className="flex h-full">
-          {/* Editor Panel */}
           {(viewMode === "edit" || viewMode === "split") && (
             <div
               className={`${
@@ -390,7 +388,6 @@ Happy writing! 🚀`);
             </div>
           )}
 
-          {/* Preview Panel */}
           {(viewMode === "preview" || viewMode === "split") && (
             <div className={viewMode === "split" ? "w-1/2" : "w-full"}>
               {renderPreview()}
