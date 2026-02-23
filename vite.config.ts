@@ -23,7 +23,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: path.resolve(__dirname, "src/index.ts"),
-      name: "ReactMarkdownEditor",
+      name: "NeoMd",
       fileName: (format) => `index.${format === "es" ? "js" : "umd.cjs"}`,
     },
     rollupOptions: {

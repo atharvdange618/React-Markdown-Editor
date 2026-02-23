@@ -21,13 +21,13 @@ A modern, highly-configurable, and highly-secure React markdown editor component
 ## Installation
 
 ```bash
-npm install react-markdown-editor
+npm install neo-md
 # or
-yarn add react-markdown-editor
+yarn add neo-md
 # or
-pnpm add react-markdown-editor
+pnpm add neo-md
 # or
-bun add react-markdown-editor
+bun add neo-md
 ```
 
 You must also have `react` and `react-dom` installed as they are peer dependencies.
@@ -39,10 +39,10 @@ You must also have `react` and `react-dom` installed as they are peer dependenci
 By default, the editor works out of the box with zero configuration necessary.
 
 ```tsx
-import { MarkdownEditor } from "react-markdown-editor";
+import { MarkdownEditor } from "neo-md";
 
 // Important: import the CSS!
-import "react-markdown-editor/react-markdown-editor.css";
+import "neo-md/react-markdown-editor.css";
 
 function App() {
   return (
@@ -59,8 +59,8 @@ Control the text value, track the current pane view mode, and alter the default 
 
 ```tsx
 import { useState, useRef } from "react";
-import { MarkdownEditor, MarkdownEditorRef } from "react-markdown-editor";
-import "react-markdown-editor/react-markdown-editor.css";
+import { MarkdownEditor, MarkdownEditorRef } from "neo-md";
+import "neo-md/react-markdown-editor.css";
 
 function App() {
   const [markdown, setMarkdown] = useState("# Initial Text");
