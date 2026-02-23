@@ -13,11 +13,10 @@ A modern, highly-configurable, and highly-secure React markdown editor component
 - **Ref Forwarding** - Programmatically trigger focus or grab values using `useImperativeHandle` and `forwardRef`.
 - **Custom Renderers** - Inject your own custom React components directly into the `react-markdown` DOM rendering pipeline.
 - **Live Preview** - Real-time rendering of markdown content with scroll tracking sync.
-- **Dark Mode Support** - Built-in Tailwind themeing compatible with system preferences.
+- **Dark Mode Support** - Built-in Tailwind theming compatible with system preferences.
 
 ## Demo
-
-[Live Demo](https://your-demo-link.vercel.app)
+[Live Demo](https://neo-md.atharvdangedev.in)
 
 ## Installation
 
@@ -31,7 +30,7 @@ pnpm add neo-md
 bun add neo-md
 ```
 
-You must also have `react` and `react-dom` installed as they are peer dependencies.
+You must also have `react` and `react-dom` installed, as they are peer dependencies.
 
 ## Usage
 
