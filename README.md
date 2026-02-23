@@ -1,124 +1,135 @@
 # React Markdown Editor
 
-A modern, feature-rich markdown editor built with React and Tailwind CSS. It provides live preview capabilities, syntax highlighting, and supports multiple view modes.
+A modern, highly-configurable, and highly-secure React markdown editor component. Built with React and Tailwind CSS, it provides dual-pane live preview capabilities, syntax highlighting, and an extensive Props API for controlled or uncontrolled states.
 
 ![Markdown Editor Screenshot](image.png)
 
 ## Features
 
-- **Syntax Highlighting** - Color-coded markdown syntax in the editor for improved readability.
-- **Live Preview** - Real-time rendering of markdown content.
-- **Multiple View Modes** - Switch seamlessly between Edit-only, Preview-only, or Split view.
-- **Responsive Design** - Optimized for desktop, tablet, and mobile interfaces.
-- **Export Options** - Copy content to clipboard or download as a `.md` file.
-- **Character Counter** - Real-time document length and typography tracking.
-- **Dark Mode Support** - Built-in themeing compatible with system preferences.
-- **Rich Markdown Support** - Comprehensive support for headers, lists, code blocks, tables, and standard markdown elements.
-- **Performance** - Fast and lightweight, built with minimal external dependencies.
+- **XSS Prevention** - Raw HTML rendering in the editor pane is secured via `isomorphic-dompurify`.
+- **Controlled & Uncontrolled Support** - Plug it into external state naturally like a standard input element, or let it manage its own.
+- **Deep Customizability** - Apply your own `className` structures mapping to the editor pane, preview pane, and toolbar.
+- **Ref Forwarding** - Programmatically trigger focus or grab values using `useImperativeHandle` and `forwardRef`.
+- **Custom Renderers** - Inject your own custom React components directly into the `react-markdown` DOM rendering pipeline.
+- **Live Preview** - Real-time rendering of markdown content with scroll tracking sync.
+- **Dark Mode Support** - Built-in Tailwind themeing compatible with system preferences.
 
 ## Demo
 
 [Live Demo](https://your-demo-link.vercel.app)
 
-## Tech Stack
-
-- **React 18+** - Core UI library
-- **TypeScript** - Static typing
-- **react-markdown** - Markdown parsing and rendering
-- **Tailwind CSS** - Utility-first styling
-- **shadcn/ui** - Accessible UI components
-- **Lucide React** - Iconography
-
 ## Installation
 
-1. **Clone the repository**
+```bash
+npm install react-markdown-editor
+# or
+yarn add react-markdown-editor
+# or
+pnpm add react-markdown-editor
+# or
+bun add react-markdown-editor
+```
 
-   ```bash
-   git clone https://github.com/atharvdange618/React-Markdown-Editor.git
-   cd React-Markdown-Editor
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   pnpm install
-   ```
-
-3. **Start the development server**
-
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
-   ```
-
-4. **Open your browser**
-   Navigate to `http://localhost:5173` (or the port shown in your terminal) to view the application.
+You must also have `react` and `react-dom` installed as they are peer dependencies.
 
 ## Usage
 
-### Basic Implementation
+### Basic Implementation (Uncontrolled)
+
+By default, the editor works out of the box with zero configuration necessary.
 
 ```tsx
-import MarkdownEditor from "./components/MarkdownEditor";
+import { MarkdownEditor } from "react-markdown-editor";
+
+// Important: import the CSS!
+import "react-markdown-editor/react-markdown-editor.css";
 
 function App() {
   return (
-    <div className="App">
+    <div className="h-screen py-8">
       <MarkdownEditor />
     </div>
   );
 }
 ```
 
-### View Modes
+### Advanced Implementation (Controlled)
 
-- **Edit Mode**: Focus strictly on writing with syntax highlighting active.
-- **Preview Mode**: View the rendered HTML output.
-- **Split Mode**: Edit and preview the document side-by-side.
-
-## Customization
-
-The editor uses Tailwind CSS and shadcn/ui components, allowing for straightforward customization.
-
-### Theme Colors
-
-To modify the syntax highlighting colors, update the `syntaxHighlight` configuration:
+Control the text value, track the current pane view mode, and alter the default toolbar state using the rich Props API.
 
 ```tsx
-// Headers
-.replace(
-  /^(#{1,6})\s+(.+)$/gm,
-  '<span class="text-blue-600 font-bold">$1</span> <span class="text-purple-700 font-semibold">$2</span>'
-)
+import { useState, useRef } from "react";
+import { MarkdownEditor, MarkdownEditorRef } from "react-markdown-editor";
+import "react-markdown-editor/react-markdown-editor.css";
+
+function App() {
+  const [markdown, setMarkdown] = useState("# Initial Text");
+  const [view, setView] = useState<"edit" | "preview" | "split">("split");
+  const editorRef = useRef<MarkdownEditorRef>(null);
+
+  const focusEditor = () => editorRef.current?.focus();
+
+  const customRenderers = {
+    h1: ({ children }) => (
+      <h1 className="text-4xl text-blue-500">{children}</h1>
+    ),
+  };
+
+  return (
+    <div className="h-screen py-8">
+      <button onClick={focusEditor}>Focus Textarea</button>
+
+      <MarkdownEditor
+        ref={editorRef}
+        value={markdown}
+        onChange={setMarkdown}
+        viewMode={view}
+        onViewModeChange={setView}
+        components={customRenderers}
+        hideWordCount={true}
+        enableCopy={false}
+        className="my-custom-wrapper"
+        placeholder="Type something amazing..."
+      />
+    </div>
+  );
+}
 ```
 
-## Project Structure
+## API Reference
 
-```
-src/
-├── components/
-│   ├── ui/              # shadcn/ui components
-│   │   ├── badge.tsx
-│   │   ├── button.tsx
-│   │   ├── card.tsx
-│   │   └── separator.tsx
-│   └── MarkdownEditor.tsx
-├── lib/
-│   └── utils.ts
-├── App.tsx
-└── main.tsx
-```
+The `MarkdownEditor` component accepts the following props:
+
+| Prop               | Type                             | Default              | Description                                        |
+| ------------------ | -------------------------------- | -------------------- | -------------------------------------------------- |
+| `value`            | `string`                         | `undefined`          | The controlled markdown text.                      |
+| `defaultValue`     | `string`                         | `(default template)` | Initial text for uncontrolled mode.                |
+| `onChange`         | `(value: string) => void`        | `undefined`          | Callback fired when text changes.                  |
+| `viewMode`         | `"edit" \| "preview" \| "split"` | `undefined`          | The controlled view mode.                          |
+| `defaultViewMode`  | `"edit" \| "preview" \| "split"` | `"split"`            | Initial view mode for uncontrolled mode.           |
+| `onViewModeChange` | `(mode) => void`                 | `undefined`          | Callback fired when a toolbar tab is clicked.      |
+| `className`        | `string`                         | `""`                 | Classes applied to the root container.             |
+| `editorClassName`  | `string`                         | `""`                 | Classes applied to the editor pane wrapper.        |
+| `previewClassName` | `string`                         | `""`                 | Classes applied to the preview pane wrapper.       |
+| `hideToolbar`      | `boolean`                        | `false`              | Completely removes the top toolbar block.          |
+| `hideWordCount`    | `boolean`                        | `false`              | Hides the character counter badge.                 |
+| `enableDownload`   | `boolean`                        | `true`               | Toggles the exact "Download" button.               |
+| `enableCopy`       | `boolean`                        | `true`               | Toggles the exact "Copy" button.                   |
+| `placeholder`      | `string`                         | `"Start typing..."`  | Textbox placeholder text.                          |
+| `readOnly`         | `boolean`                        | `false`              | Disables text input while retaining interactions.  |
+| `maxLength`        | `number`                         | `undefined`          | Hard cap on textarea character length.             |
+| `components`       | `Components`                     | `{}`                 | Complete `react-markdown` DOM rendering overrides. |
+
+## Exposed Methods (`MarkdownEditorRef`)
+
+Via `forwardRef`, parents can trigger the following imperatives on the editor:
+
+- `focus()`: Forces browser focus onto the underlying `<textarea>`.
+- `getValue()`: Retrieves the current internal markdown string, particularly useful if you run uncontrolled mode and just want the value on submit.
 
 ## Contributing
 
-Contributions are welcome. Please feel free to submit a Pull Request. For major changes or architectural shifts, please open an issue first to discuss your proposed updates.
+Contributions are welcome. Please feel free to submit a Pull Request.
 
 1. Fork the project
 2. Create your feature branch (`git checkout -b feature/Enhancement`)
@@ -126,24 +137,6 @@ Contributions are welcome. Please feel free to submit a Pull Request. For major 
 4. Push to the branch (`git push origin feature/Enhancement`)
 5. Open a Pull Request
 
-## Known Issues
-
-- Certain advanced or custom markdown extensions may not be fully supported by the inline syntax highlighting.
-
 ## License
 
-This project is licensed under the MIT License.
-
-## Acknowledgments
-
-- [react-markdown](https://github.com/remarkjs/react-markdown) for robust markdown parsing.
-- [shadcn/ui](https://ui.shadcn.com/) for foundational UI components.
-- [Tailwind CSS](https://tailwindcss.com/) for the styling engine.
-- [Lucide](https://lucide.dev/) for the icon system.
-
-## Support
-
-For issues, questions, or general support:
-
-- Open an issue on GitHub
-- Reach out on [Twitter](https://x.com/atharvdangedev)
+This project is licensed under the [MIT License](LICENSE).
