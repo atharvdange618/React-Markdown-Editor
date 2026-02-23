@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Eye, Edit, Split, Copy, Download } from "lucide-react";
 import DOMPurify from "isomorphic-dompurify";
 import { Badge } from "../ui/badge";
@@ -20,45 +21,48 @@ const syntaxHighlight = (text: string) => {
   processed = processed
     .replace(
       /^(#{1,6})\s+(.+)$/gm,
-      '<span class="text-blue-600 font-bold">$1</span> <span class="text-purple-700 font-semibold">$2</span>',
+      '<span style="color:#569cd6;font-weight:bold">$1</span> <span style="color:#c792ea;font-weight:600">$2</span>',
     )
     .replace(
       /\*\*(.*?)\*\*/g,
-      '<span class="text-orange-600 font-bold">**</span><span class="text-orange-700 font-bold">$1</span><span class="text-orange-600 font-bold">**</span>',
+      '<span style="color:#ce9178">**</span><span style="color:#ffd700;font-weight:bold">$1</span><span style="color:#ce9178">**</span>',
     )
     .replace(
       /\*(.*?)\*/g,
-      '<span class="text-green-600">*</span><span class="text-green-700 italic">$1</span><span class="text-green-600">*</span>',
+      '<span style="color:#6a9955">*</span><span style="color:#b5cea8;font-style:italic">$1</span><span style="color:#6a9955">*</span>',
     )
     .replace(
       /~~(.*?)~~/g,
-      '<span class="text-red-600">~~</span><span class="text-red-700 line-through">$1</span><span class="text-red-600">~~</span>',
+      '<span style="color:#f44747">~~</span><span style="color:#f44747;text-decoration:line-through">$1</span><span style="color:#f44747">~~</span>',
     )
     .replace(
       /`([^`]+)`/g,
-      '<span class="text-pink-600 bg-pink-50 px-1 rounded">`</span><span class="text-pink-800 bg-pink-100 px-1 font-mono">$1</span><span class="text-pink-600 bg-pink-50 px-1 rounded">`</span>',
+      '<span style="color:#f92672">`</span><span style="color:#f8f8f2;background:rgba(255,255,255,0.1);padding:0 3px;border-radius:3px;font-family:monospace">$1</span><span style="color:#f92672">`</span>',
     )
     .replace(
       /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<span class="text-blue-600">[</span><span class="text-blue-800 underline">$1</span><span class="text-blue-600">](</span><span class="text-cyan-600">$2</span><span class="text-blue-600">)</span>',
+      '<span style="color:#569cd6">[</span><span style="color:#4ec9b0;text-decoration:underline">$1</span><span style="color:#569cd6">](</span><span style="color:#9cdcfe">$2</span><span style="color:#569cd6">)</span>',
     )
     .replace(
       /^(\s*)([-*+])\s+(.+)$/gm,
-      '$1<span class="text-indigo-600 font-bold">$2</span> <span class="text-gray-800">$3</span>',
+      '$1<span style="color:#569cd6;font-weight:bold">$2</span> <span style="color:#d4d4d4">$3</span>',
     )
     .replace(
       /^(\s*)(\d+\.)\s+(.+)$/gm,
-      '$1<span class="text-purple-600 font-bold">$2</span> <span class="text-gray-800">$3</span>',
+      '$1<span style="color:#c792ea;font-weight:bold">$2</span> <span style="color:#d4d4d4">$3</span>',
     )
     .replace(
-      /^>\s+(.+)$/gm,
-      '<span class="text-emerald-600 font-bold">&gt;</span> <span class="text-emerald-700 italic">$1</span>',
+      /^&gt;\s+(.+)$/gm,
+      '<span style="color:#6a9955;font-weight:bold">&gt;</span> <span style="color:#6a9955;font-style:italic">$1</span>',
     )
     .replace(
       /```(\w+)?\n([\s\S]*?)\n```/g,
-      '<span class="text-violet-600 bg-violet-50 px-2 py-1 rounded">```$1</span>\n<span class="text-gray-800 bg-gray-100 block p-2 rounded font-mono text-sm">$2</span>\n<span class="text-violet-600 bg-violet-50 px-2 py-1 rounded">```</span>',
+      '<span style="color:#c792ea">```$1</span>\n<span style="color:#d4d4d4;background:rgba(255,255,255,0.05);display:block;padding:6px 8px;border-radius:4px;font-family:monospace;font-size:0.875em">$2</span>\n<span style="color:#c792ea">```</span>',
     )
-    .replace(/^---+$/gm, '<span class="text-gray-400 font-bold">$&</span>');
+    .replace(
+      /^---+$/gm,
+      '<span style="color:#4a4a4a;font-weight:bold">$&</span>',
+    );
 
   return DOMPurify.sanitize(processed);
 };
@@ -402,7 +406,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                     className="absolute inset-0 w-full h-full p-4 border-none outline-none resize-none bg-transparent font-mono text-sm leading-relaxed z-10 wrap-break-word"
                     style={{
                       color: "transparent",
-                      caretColor: "inherit",
+                      caretColor: "var(--foreground, #d4d4d4)",
                     }}
                   />
                 </div>
@@ -420,7 +424,10 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                 </div>
                 <div className="p-4 flex-1 overflow-auto">
                   <div className="prose prose-slate dark:prose-invert max-w-none">
-                    <ReactMarkdown components={memoizedComponents}>
+                    <ReactMarkdown
+                      components={memoizedComponents}
+                      remarkPlugins={[remarkGfm]}
+                    >
                       {markdown}
                     </ReactMarkdown>
                   </div>
