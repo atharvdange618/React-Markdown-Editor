@@ -1,7 +1,7 @@
 {
   "name": "neo-md",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.2",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.umd.cjs",
@@ -13,7 +13,7 @@
       "import": "./dist/index.js",
       "require": "./dist/index.umd.cjs"
     },
-    "./react-markdown-editor.css": "./dist/react-markdown-editor.css"
+    "./neo-md.css": "./dist/neo-md.css"
   },
   "files": [
     "dist"

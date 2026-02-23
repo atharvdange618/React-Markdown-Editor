@@ -371,42 +371,41 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
               <div
                 className={`${
                   viewMode === "split" ? "w-1/2" : "w-full"
-                } border-r h-full relative ${editorClassName || ""}`}
+                } border-r h-full flex flex-col ${editorClassName || ""}`}
               >
                 <div className="p-4 border-b bg-muted/30">
                   <h3 className="font-medium text-sm text-muted-foreground">
                     Syntax-Highlighted Editor
                   </h3>
                 </div>
-                <div
-                  ref={highlightRef}
-                  className="absolute inset-0 p-4 font-mono text-sm leading-relaxed pointer-events-none overflow-auto whitespace-pre-wrap wrap-break-word"
-                  style={{
-                    top: "53px",
-                    minHeight: "calc(100% - 53px)",
-                    color: "transparent",
-                    zIndex: 1,
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: syntaxHighlight(markdown),
-                  }}
-                />
-                <textarea
-                  ref={textareaRef}
-                  value={markdown}
-                  onChange={handleTextChange}
-                  onScroll={handleScroll}
-                  placeholder={placeholder}
-                  readOnly={readOnly}
-                  maxLength={maxLength}
-                  className="w-full p-4 border-none outline-none resize-none bg-transparent font-mono text-sm leading-relaxed relative z-10"
-                  style={{
-                    height: "calc(100% - 53px)",
-                    color: "inherit",
-                  }}
-                />
+                <div className="relative flex-1 w-full bg-transparent overflow-hidden">
+                  <div
+                    ref={highlightRef}
+                    className="absolute inset-0 p-4 font-mono text-sm leading-relaxed pointer-events-none overflow-auto whitespace-pre-wrap wrap-break-word"
+                    style={{
+                      scrollbarWidth: "none",
+                      msOverflowStyle: "none",
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: syntaxHighlight(markdown),
+                    }}
+                  />
+                  <textarea
+                    ref={textareaRef}
+                    value={markdown}
+                    onChange={handleTextChange}
+                    onScroll={handleScroll}
+                    placeholder={placeholder}
+                    readOnly={readOnly}
+                    maxLength={maxLength}
+                    spellCheck={false}
+                    className="absolute inset-0 w-full h-full p-4 border-none outline-none resize-none bg-transparent font-mono text-sm leading-relaxed z-10 wrap-break-word"
+                    style={{
+                      color: "transparent",
+                      caretColor: "inherit",
+                    }}
+                  />
+                </div>
               </div>
             ) : null}
 
