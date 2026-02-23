@@ -3,4 +3,5 @@ export { default as MarkdownEditor } from "./Components/MarkdownEditor/MarkdownE
 export type {
   MarkdownEditorProps,
   MarkdownEditorRef,
+  SyntaxHighlightColors,
 } from "./Components/MarkdownEditor/MarkdownEditor";

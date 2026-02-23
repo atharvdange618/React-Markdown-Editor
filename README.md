@@ -7,6 +7,7 @@ A modern, highly-configurable, and highly-secure React markdown editor component
 ## Features
 
 - **XSS Prevention** - Raw HTML rendering in the editor pane is secured via `isomorphic-dompurify`.
+- **Syntax Highlighting** - Fully customizable color themes for the editor pane with support for headings, bold, italic, links, code blocks, lists, and more.
 - **Controlled & Uncontrolled Support** - Plug it into external state naturally like a standard input element, or let it manage its own.
 - **Deep Customizability** - Apply your own `className` structures mapping to the editor pane, preview pane, and toolbar.
 - **Ref Forwarding** - Programmatically trigger focus or grab values using `useImperativeHandle` and `forwardRef`.
@@ -119,6 +120,7 @@ The `MarkdownEditor` component accepts the following props:
 | `readOnly`         | `boolean`                        | `false`              | Disables text input while retaining interactions.  |
 | `maxLength`        | `number`                         | `undefined`          | Hard cap on textarea character length.             |
 | `components`       | `Components`                     | `{}`                 | Complete `react-markdown` DOM rendering overrides. |
+| `syntaxColors`     | `SyntaxHighlightColors`          | `defaultColors`      | Custom color theme for syntax highlighting.        |
 
 ## Exposed Methods (`MarkdownEditorRef`)
 
@@ -129,13 +131,7 @@ Via `forwardRef`, parents can trigger the following imperatives on the editor:
 
 ## Contributing
 
-Contributions are welcome. Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/Enhancement`)
-3. Commit your changes (`git commit -m 'Add some Enhancement'`)
-4. Push to the branch (`git push origin feature/Enhancement`)
-5. Open a Pull Request
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for detailed information on how to get started, development workflow, and coding guidelines.
 
 ## License
 

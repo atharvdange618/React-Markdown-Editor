@@ -15,53 +15,116 @@ import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { Card, CardContent } from "../ui/card";
 
-const syntaxHighlight = (text: string) => {
+export interface SyntaxHighlightColors {
+  heading?: string;
+  headingText?: string;
+  bold?: string;
+  boldText?: string;
+  italic?: string;
+  italicText?: string;
+  strikethrough?: string;
+  strikethroughText?: string;
+  inlineCode?: string;
+  inlineCodeText?: string;
+  inlineCodeBg?: string;
+  link?: string;
+  linkText?: string;
+  linkUrl?: string;
+  image?: string;
+  imageAlt?: string;
+  imagePath?: string;
+  listBullet?: string;
+  listText?: string;
+  orderedList?: string;
+  blockquote?: string;
+  blockquoteText?: string;
+  codeBlock?: string;
+  codeBlockText?: string;
+  codeBlockBg?: string;
+  horizontalRule?: string;
+}
+
+const defaultSyntaxColors: SyntaxHighlightColors = {
+  heading: "#569cd6",
+  headingText: "#c792ea",
+  bold: "#ce9178",
+  boldText: "#ffd700",
+  italic: "#6a9955",
+  italicText: "#b5cea8",
+  strikethrough: "#f44747",
+  strikethroughText: "#f44747",
+  inlineCode: "#f92672",
+  inlineCodeText: "#f8f8f2",
+  inlineCodeBg: "rgba(255,255,255,0.1)",
+  link: "#569cd6",
+  linkText: "#4ec9b0",
+  linkUrl: "#9cdcfe",
+  image: "#d19a66",
+  imageAlt: "#98c379",
+  imagePath: "#e5c07b",
+  listBullet: "#569cd6",
+  listText: "#222",
+  orderedList: "#c792ea",
+  blockquote: "#6a9955",
+  blockquoteText: "#6a9955",
+  codeBlock: "#c792ea",
+  codeBlockText: "#d4d4d4",
+  codeBlockBg: "rgba(255,255,255,0.05)",
+  horizontalRule: "#4a4a4a",
+};
+
+const syntaxHighlight = (text: string, colors: SyntaxHighlightColors = {}) => {
+  const c = { ...defaultSyntaxColors, ...colors };
   let processed = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   processed = processed
     .replace(
       /^(#{1,6})\s+(.+)$/gm,
-      '<span style="color:#569cd6;font-weight:bold">$1</span> <span style="color:#c792ea;font-weight:600">$2</span>',
+      `<span style="color:${c.heading};font-weight:bold">$1</span> <span style="color:${c.headingText};font-weight:600">$2</span>`,
     )
     .replace(
       /\*\*(.*?)\*\*/g,
-      '<span style="color:#ce9178">**</span><span style="color:#ffd700;font-weight:bold">$1</span><span style="color:#ce9178">**</span>',
+      `<span style="color:${c.bold}">**</span><span style="color:${c.boldText};font-weight:bold">$1</span><span style="color:${c.bold}">**</span>`,
     )
     .replace(
       /\*(.*?)\*/g,
-      '<span style="color:#6a9955">*</span><span style="color:#b5cea8;font-style:italic">$1</span><span style="color:#6a9955">*</span>',
+      `<span style="color:${c.italic}">*</span><span style="color:${c.italicText};font-style:italic">$1</span><span style="color:${c.italic}">*</span>`,
     )
     .replace(
       /~~(.*?)~~/g,
-      '<span style="color:#f44747">~~</span><span style="color:#f44747;text-decoration:line-through">$1</span><span style="color:#f44747">~~</span>',
+      `<span style="color:${c.strikethrough}">~~</span><span style="color:${c.strikethroughText};text-decoration:line-through">$1</span><span style="color:${c.strikethrough}">~~</span>`,
     )
     .replace(
       /`([^`]+)`/g,
-      '<span style="color:#f92672">`</span><span style="color:#f8f8f2;background:rgba(255,255,255,0.1);padding:0 3px;border-radius:3px;font-family:monospace">$1</span><span style="color:#f92672">`</span>',
+      `<span style="color:${c.inlineCode}">\`</span><span style="color:${c.inlineCodeText};background:${c.inlineCodeBg};padding:0 3px;border-radius:3px;font-family:monospace">$1</span><span style="color:${c.inlineCode}">\`</span>`,
+    )
+    .replace(
+      /!\[([^\]]*)\]\(([^)]+)\)/g,
+      `<span style="color:${c.image}">!</span><span style="color:${c.image}">[</span><span style="color:${c.imageAlt}">$1</span><span style="color:${c.image}">](</span><span style="color:${c.imagePath}">$2</span><span style="color:${c.image}">)</span>`,
     )
     .replace(
       /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<span style="color:#569cd6">[</span><span style="color:#4ec9b0;text-decoration:underline">$1</span><span style="color:#569cd6">](</span><span style="color:#9cdcfe">$2</span><span style="color:#569cd6">)</span>',
+      `<span style="color:${c.link}">[</span><span style="color:${c.linkText};text-decoration:underline">$1</span><span style="color:${c.link}">](</span><span style="color:${c.linkUrl}">$2</span><span style="color:${c.link}">)</span>`,
     )
     .replace(
       /^(\s*)([-*+])\s+(.+)$/gm,
-      '$1<span style="color:#569cd6;font-weight:bold">$2</span> <span style="color:#d4d4d4">$3</span>',
+      `$1<span style="color:${c.listBullet};font-weight:bold">$2</span> <span style="color:${c.listText}">$3</span>`,
     )
     .replace(
       /^(\s*)(\d+\.)\s+(.+)$/gm,
-      '$1<span style="color:#c792ea;font-weight:bold">$2</span> <span style="color:#d4d4d4">$3</span>',
+      `$1<span style="color:${c.orderedList};font-weight:bold">$2</span> <span style="color:${c.listText}">$3</span>`,
     )
     .replace(
       /^&gt;\s+(.+)$/gm,
-      '<span style="color:#6a9955;font-weight:bold">&gt;</span> <span style="color:#6a9955;font-style:italic">$1</span>',
+      `<span style="color:${c.blockquote};font-weight:bold">&gt;</span> <span style="color:${c.blockquoteText};font-style:italic">$1</span>`,
     )
     .replace(
       /```(\w+)?\n([\s\S]*?)\n```/g,
-      '<span style="color:#c792ea">```$1</span>\n<span style="color:#d4d4d4;background:rgba(255,255,255,0.05);display:block;padding:6px 8px;border-radius:4px;font-family:monospace;font-size:0.875em">$2</span>\n<span style="color:#c792ea">```</span>',
+      `<span style="color:${c.codeBlock}">\`\`\`$1</span>\n<span style="color:${c.codeBlockText};background:${c.codeBlockBg};display:block;padding:6px 8px;border-radius:4px;font-family:monospace;font-size:0.875em">$2</span>\n<span style="color:${c.codeBlock}">\`\`\`</span>`,
     )
     .replace(
       /^---+$/gm,
-      '<span style="color:#4a4a4a;font-weight:bold">$&</span>',
+      `<span style="color:${c.horizontalRule};font-weight:bold">$&</span>`,
     );
 
   return DOMPurify.sanitize(processed);
@@ -191,6 +254,7 @@ export interface MarkdownEditorProps {
   readOnly?: boolean;
   maxLength?: number;
   components?: Components;
+  syntaxColors?: SyntaxHighlightColors;
 }
 
 export interface MarkdownEditorRef {
@@ -218,6 +282,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       readOnly = false,
       maxLength,
       components,
+      syntaxColors,
     },
     ref,
   ) => {
@@ -391,7 +456,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                       msOverflowStyle: "none",
                     }}
                     dangerouslySetInnerHTML={{
-                      __html: syntaxHighlight(markdown),
+                      __html: syntaxHighlight(markdown, syntaxColors),
                     }}
                   />
                   <textarea
