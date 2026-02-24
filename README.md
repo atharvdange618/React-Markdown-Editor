@@ -2,7 +2,7 @@
 
 A modern, highly-configurable, and highly-secure React markdown editor component. Built with React and Tailwind CSS, it provides dual-pane live preview capabilities, syntax highlighting, and an extensive Props API for controlled or uncontrolled states.
 
-![Markdown Editor Screenshot](image.png)
+![Markdown Editor Screenshot](https://neo-md.atharvdangedev.in/demo.png)
 
 ## Features
 
@@ -17,7 +17,7 @@ A modern, highly-configurable, and highly-secure React markdown editor component
 
 ## Demo
 
-[Live Demo](https://your-demo-link.vercel.app)
+[Live Demo](https://neo-md.atharvdangedev.in)
 
 ## Installation
 
