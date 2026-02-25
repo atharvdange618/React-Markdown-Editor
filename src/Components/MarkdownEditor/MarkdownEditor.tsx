@@ -14,6 +14,8 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { Card, CardContent } from "../ui/card";
+import MarkdownToolbar from "./MarkdownToolbar";
+import { useMarkdownActions } from "./useMarkdownActions";
 
 export interface SyntaxHighlightColors {
   heading?: string;
@@ -248,8 +250,10 @@ export interface MarkdownEditorProps {
   previewClassName?: string;
   hideToolbar?: boolean;
   hideWordCount?: boolean;
+  hideMarkdownToolbar?: boolean;
   enableDownload?: boolean;
   enableCopy?: boolean;
+  enableScrollSync?: boolean;
   placeholder?: string;
   readOnly?: boolean;
   maxLength?: number;
@@ -276,8 +280,10 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       previewClassName,
       hideToolbar = false,
       hideWordCount = false,
+      hideMarkdownToolbar = false,
       enableDownload = true,
       enableCopy = true,
+      enableScrollSync = true,
       placeholder = "Start typing your markdown here...",
       readOnly = false,
       maxLength,
@@ -301,6 +307,8 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const highlightRef = useRef<HTMLDivElement>(null);
+    const previewRef = useRef<HTMLDivElement>(null);
+    const isScrollSyncing = useRef(false);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -309,9 +317,8 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       getValue: () => markdown,
     }));
 
-    const handleTextChange = useCallback(
-      (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const newValue = e.target.value;
+    const updateMarkdown = useCallback(
+      (newValue: string) => {
         if (!isControlled) {
           setInternalMarkdown(newValue);
         }
@@ -319,6 +326,15 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       },
       [isControlled, onChange],
     );
+
+    const handleTextChange = useCallback(
+      (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        updateMarkdown(e.target.value);
+      },
+      [updateMarkdown],
+    );
+
+    const markdownActions = useMarkdownActions(textareaRef, updateMarkdown);
 
     const handleViewModeChange = useCallback(
       (mode: "edit" | "preview" | "split") => {
@@ -330,14 +346,59 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       [isViewModeControlled, onViewModeChange],
     );
 
-    const handleScroll = useCallback(
+    const handleEditorScroll = useCallback(
       (e: React.UIEvent<HTMLTextAreaElement>) => {
+        const source = e.currentTarget;
+
         if (highlightRef.current) {
-          highlightRef.current.scrollTop = e.currentTarget.scrollTop;
-          highlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
+          highlightRef.current.scrollTop = source.scrollTop;
+          highlightRef.current.scrollLeft = source.scrollLeft;
         }
+
+        if (!enableScrollSync || isScrollSyncing.current) return;
+        isScrollSyncing.current = true;
+
+        const target = previewRef.current;
+        if (target) {
+          const scrollableHeight = source.scrollHeight - source.clientHeight;
+          const scrollPercent =
+            scrollableHeight > 0 ? source.scrollTop / scrollableHeight : 0;
+          target.scrollTop =
+            scrollPercent * (target.scrollHeight - target.clientHeight);
+        }
+
+        requestAnimationFrame(() => {
+          isScrollSyncing.current = false;
+        });
       },
-      [],
+      [enableScrollSync],
+    );
+
+    const handlePreviewScroll = useCallback(
+      (e: React.UIEvent<HTMLDivElement>) => {
+        if (!enableScrollSync || isScrollSyncing.current) return;
+        isScrollSyncing.current = true;
+
+        const source = e.currentTarget;
+        const target = textareaRef.current;
+
+        if (target) {
+          const scrollableHeight = source.scrollHeight - source.clientHeight;
+          const scrollPercent =
+            scrollableHeight > 0 ? source.scrollTop / scrollableHeight : 0;
+          target.scrollTop =
+            scrollPercent * (target.scrollHeight - target.clientHeight);
+
+          if (highlightRef.current) {
+            highlightRef.current.scrollTop = target.scrollTop;
+          }
+        }
+
+        requestAnimationFrame(() => {
+          isScrollSyncing.current = false;
+        });
+      },
+      [enableScrollSync],
     );
 
     const copyToClipboard = useCallback(async () => {
@@ -371,7 +432,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
 
     return (
       <Card
-        className={`w-full h-screen max-h-screen flex flex-col ${className || ""}`}
+        className={`w-full h-screen max-h-screen flex flex-col gap-0 py-0 ${className || ""}`}
       >
         {!hideToolbar ? (
           <div className="flex items-center justify-between p-4 border-b bg-muted/50">
@@ -434,19 +495,22 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           </div>
         ) : null}
 
-        <CardContent className="flex-1 p-0 overflow-hidden">
-          <div className="flex h-full">
+        <CardContent className="flex-1 p-0 min-h-0 overflow-hidden">
+          <div className="flex h-full min-h-0">
             {viewMode === "edit" || viewMode === "split" ? (
               <div
                 className={`${
                   viewMode === "split" ? "w-1/2" : "w-full"
-                } border-r h-full flex flex-col ${editorClassName || ""}`}
+                } border-r h-full min-h-0 flex flex-col ${editorClassName || ""}`}
               >
                 <div className="p-4 border-b bg-muted/30">
                   <h3 className="font-medium text-sm text-muted-foreground">
                     Syntax-Highlighted Editor
                   </h3>
                 </div>
+                {!hideMarkdownToolbar && !readOnly && (
+                  <MarkdownToolbar actions={markdownActions} />
+                )}
                 <div className="relative flex-1 w-full bg-transparent overflow-hidden">
                   <div
                     ref={highlightRef}
@@ -463,7 +527,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                     ref={textareaRef}
                     value={markdown}
                     onChange={handleTextChange}
-                    onScroll={handleScroll}
+                    onScroll={handleEditorScroll}
                     placeholder={placeholder}
                     readOnly={readOnly}
                     maxLength={maxLength}
@@ -480,14 +544,18 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
 
             {viewMode === "preview" || viewMode === "split" ? (
               <div
-                className={`${viewMode === "split" ? "w-1/2" : "w-full"} h-full flex flex-col ${previewClassName || ""}`}
+                className={`${viewMode === "split" ? "w-1/2" : "w-full"} h-full min-h-0 flex flex-col ${previewClassName || ""}`}
               >
                 <div className="p-4 border-b bg-muted/30">
                   <h3 className="font-medium text-sm text-muted-foreground">
                     Preview
                   </h3>
                 </div>
-                <div className="p-4 flex-1 overflow-auto">
+                <div
+                  ref={previewRef}
+                  onScroll={handlePreviewScroll}
+                  className="p-4 flex-1 overflow-auto min-h-0"
+                >
                   <div className="prose prose-slate dark:prose-invert max-w-none">
                     <ReactMarkdown
                       components={memoizedComponents}
