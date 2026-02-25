@@ -44,6 +44,9 @@ export interface SyntaxHighlightColors {
   codeBlockText?: string;
   codeBlockBg?: string;
   horizontalRule?: string;
+  tablePipe?: string;
+  tableCellText?: string;
+  tableSeparator?: string;
 }
 
 const defaultSyntaxColors: SyntaxHighlightColors = {
@@ -73,6 +76,9 @@ const defaultSyntaxColors: SyntaxHighlightColors = {
   codeBlockText: "#d4d4d4",
   codeBlockBg: "rgba(255,255,255,0.05)",
   horizontalRule: "#4a4a4a",
+  tablePipe: "#569cd6",
+  tableCellText: "#d4d4d4",
+  tableSeparator: "#4a4a4a",
 };
 
 const syntaxHighlight = (text: string, colors: SyntaxHighlightColors = {}) => {
@@ -127,6 +133,16 @@ const syntaxHighlight = (text: string, colors: SyntaxHighlightColors = {}) => {
     .replace(
       /^---+$/gm,
       `<span style="color:${c.horizontalRule};font-weight:bold">$&</span>`,
+    )
+    .replace(
+      /^(\|[\s-:]+)+\|$/gm,
+      (match) => `<span style="color:${c.tableSeparator}">${match}</span>`,
+    )
+    .replace(/^(\|.+)+\|$/gm, (match) =>
+      match.replace(
+        /(\|)([^|]*)/g,
+        `<span style="color:${c.tablePipe}">$1</span><span style="color:${c.tableCellText}">$2</span>`,
+      ),
     );
 
   return DOMPurify.sanitize(processed);
