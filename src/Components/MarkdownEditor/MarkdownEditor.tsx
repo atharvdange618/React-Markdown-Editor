@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Eye, Edit, Split, Copy, Download } from "lucide-react";
+import { Eye, Edit, Split, Copy, Download, Check } from "lucide-react";
 import DOMPurify from "isomorphic-dompurify";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -104,7 +104,7 @@ const syntaxHighlight = (text: string, colors: SyntaxHighlightColors = {}) => {
     )
     .replace(
       /`([^`]+)`/g,
-      `<span style="color:${c.inlineCode}">\`</span><span style="color:${c.inlineCodeText};background:${c.inlineCodeBg};padding:0 3px;border-radius:3px;font-family:monospace">$1</span><span style="color:${c.inlineCode}">\`</span>`,
+      `<span style="color:${c.inlineCode}">\`</span><span style="color:${c.inlineCodeText};background:${c.inlineCodeBg};border-radius:3px;">$1</span><span style="color:${c.inlineCode}">\`</span>`,
     )
     .replace(
       /!\[([^\]]*)\]\(([^)]+)\)/g,
@@ -128,7 +128,7 @@ const syntaxHighlight = (text: string, colors: SyntaxHighlightColors = {}) => {
     )
     .replace(
       /```(\w+)?\n([\s\S]*?)\n```/g,
-      `<span style="color:${c.codeBlock}">\`\`\`$1</span>\n<span style="color:${c.codeBlockText};background:${c.codeBlockBg};display:block;padding:6px 8px;border-radius:4px;font-family:monospace;font-size:0.875em">$2</span>\n<span style="color:${c.codeBlock}">\`\`\`</span>`,
+      `<span style="color:${c.codeBlock}">\`\`\`$1</span>\n<span style="color:${c.codeBlockText};background:${c.codeBlockBg};border-radius:3px;">$2</span>\n<span style="color:${c.codeBlock}">\`\`\`</span>`,
     )
     .replace(
       /^---+$/gm,
@@ -324,7 +324,11 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const highlightRef = useRef<HTMLDivElement>(null);
     const previewRef = useRef<HTMLDivElement>(null);
-    const isScrollSyncing = useRef(false);
+    const isScrolling = useRef<"editor" | "preview" | null>(null);
+    const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    const [isCopied, setIsCopied] = useState(false);
+    const [isDownloaded, setIsDownloaded] = useState(false);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -371,8 +375,10 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           highlightRef.current.scrollLeft = source.scrollLeft;
         }
 
-        if (!enableScrollSync || isScrollSyncing.current) return;
-        isScrollSyncing.current = true;
+        if (!enableScrollSync) return;
+        if (isScrolling.current === "preview") return;
+
+        isScrolling.current = "editor";
 
         const target = previewRef.current;
         if (target) {
@@ -383,17 +389,20 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
             scrollPercent * (target.scrollHeight - target.clientHeight);
         }
 
-        requestAnimationFrame(() => {
-          isScrollSyncing.current = false;
-        });
+        if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+        scrollTimeout.current = setTimeout(() => {
+          isScrolling.current = null;
+        }, 50);
       },
       [enableScrollSync],
     );
 
     const handlePreviewScroll = useCallback(
       (e: React.UIEvent<HTMLDivElement>) => {
-        if (!enableScrollSync || isScrollSyncing.current) return;
-        isScrollSyncing.current = true;
+        if (!enableScrollSync) return;
+        if (isScrolling.current === "editor") return;
+
+        isScrolling.current = "preview";
 
         const source = e.currentTarget;
         const target = textareaRef.current;
@@ -410,9 +419,10 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
           }
         }
 
-        requestAnimationFrame(() => {
-          isScrollSyncing.current = false;
-        });
+        if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+        scrollTimeout.current = setTimeout(() => {
+          isScrolling.current = null;
+        }, 50);
       },
       [enableScrollSync],
     );
@@ -420,7 +430,8 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     const copyToClipboard = useCallback(async () => {
       try {
         await navigator.clipboard.writeText(markdown);
-        console.log("Copied to clipboard!");
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
       } catch (err) {
         console.error("Failed to copy:", err);
       }
@@ -436,6 +447,9 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      setIsDownloaded(true);
+      setTimeout(() => setIsDownloaded(false), 2000);
     }, [markdown]);
 
     const memoizedComponents = useMemo(
@@ -448,7 +462,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
 
     return (
       <Card
-        className={`w-full h-screen max-h-screen flex flex-col gap-0 py-0 ${className || ""}`}
+        className={`w-full h-full flex flex-col gap-0 py-0 ${className || ""}`}
       >
         {showToolbar ? (
           <div className="flex items-center justify-between p-4 border-b bg-muted/50">
@@ -495,16 +509,42 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
               <Separator orientation="vertical" className="h-6" />
 
               {enableCopy ? (
-                <Button variant="outline" size="sm" onClick={copyToClipboard}>
-                  <Copy className="w-4 h-4 mr-1" />
-                  Copy
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyToClipboard}
+                  className={
+                    isCopied
+                      ? "text-green-600 dark:text-green-500 border-green-600 dark:border-green-500"
+                      : ""
+                  }
+                >
+                  {isCopied ? (
+                    <Check className="w-4 h-4 mr-1" />
+                  ) : (
+                    <Copy className="w-4 h-4 mr-1" />
+                  )}
+                  {isCopied ? "Copied!" : "Copy"}
                 </Button>
               ) : null}
 
               {enableDownload ? (
-                <Button variant="outline" size="sm" onClick={downloadMarkdown}>
-                  <Download className="w-4 h-4 mr-1" />
-                  Download
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadMarkdown}
+                  className={
+                    isDownloaded
+                      ? "text-green-600 dark:text-green-500 border-green-600 dark:border-green-500"
+                      : ""
+                  }
+                >
+                  {isDownloaded ? (
+                    <Check className="w-4 h-4 mr-1" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-1" />
+                  )}
+                  {isDownloaded ? "Downloaded!" : "Download"}
                 </Button>
               ) : null}
             </div>
@@ -548,7 +588,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                     readOnly={readOnly}
                     maxLength={maxLength}
                     spellCheck={false}
-                    className="absolute inset-0 w-full h-full p-4 border-none outline-none resize-none bg-transparent font-mono text-sm leading-relaxed z-10 wrap-break-word"
+                    className="absolute inset-0 w-full h-full p-4 border-none outline-none resize-none bg-transparent font-mono text-sm leading-relaxed z-10 whitespace-pre-wrap wrap-break-word"
                     style={{
                       color: "transparent",
                       caretColor: "var(--foreground, #d4d4d4)",
