@@ -89,7 +89,7 @@ function App() {
         viewMode={view}
         onViewModeChange={setView}
         components={customRenderers}
-        hideWordCount={true}
+        showWordCount={false}
         enableCopy={false}
         className="my-custom-wrapper"
         placeholder="Type something amazing..."
@@ -114,9 +114,9 @@ The `MarkdownEditor` component accepts the following props:
 | `className`           | `string`                         | `""`                 | Classes applied to the root container.                |
 | `editorClassName`     | `string`                         | `""`                 | Classes applied to the editor pane wrapper.           |
 | `previewClassName`    | `string`                         | `""`                 | Classes applied to the preview pane wrapper.          |
-| `hideToolbar`         | `boolean`                        | `false`              | Completely removes the top toolbar block.             |
-| `hideWordCount`       | `boolean`                        | `false`              | Hides the character counter badge.                    |
-| `hideMarkdownToolbar` | `boolean`                        | `false`              | Hides the markdown formatting toolbar.                |
+| `showToolbar`         | `boolean`                        | `true`               | Shows the top toolbar block.                          |
+| `showWordCount`       | `boolean`                        | `true`               | Shows the character counter badge.                    |
+| `showMarkdownToolbar` | `boolean`                        | `true`               | Shows the markdown formatting toolbar.                |
 | `enableDownload`      | `boolean`                        | `true`               | Toggles the "Download" button.                        |
 | `enableCopy`          | `boolean`                        | `true`               | Toggles the "Copy" button.                            |
 | `enableScrollSync`    | `boolean`                        | `true`               | Toggles bidirectional scroll sync between panes.      |
@@ -125,7 +125,6 @@ The `MarkdownEditor` component accepts the following props:
 | `maxLength`           | `number`                         | `undefined`          | Hard cap on textarea character length.                |
 | `components`          | `Components`                     | `{}`                 | Complete `react-markdown` DOM rendering overrides.    |
 | `syntaxColors`        | `SyntaxHighlightColors`          | `defaultColors`      | Custom color theme for syntax highlighting.           |
-
 
 ## Exposed Methods (`MarkdownEditorRef`)
 

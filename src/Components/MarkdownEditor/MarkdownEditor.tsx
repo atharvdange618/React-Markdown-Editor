@@ -264,9 +264,9 @@ export interface MarkdownEditorProps {
   className?: string;
   editorClassName?: string;
   previewClassName?: string;
-  hideToolbar?: boolean;
-  hideWordCount?: boolean;
-  hideMarkdownToolbar?: boolean;
+  showToolbar?: boolean;
+  showWordCount?: boolean;
+  showMarkdownToolbar?: boolean;
   enableDownload?: boolean;
   enableCopy?: boolean;
   enableScrollSync?: boolean;
@@ -294,9 +294,9 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       className,
       editorClassName,
       previewClassName,
-      hideToolbar = false,
-      hideWordCount = false,
-      hideMarkdownToolbar = false,
+      showToolbar = true,
+      showWordCount = true,
+      showMarkdownToolbar = true,
       enableDownload = true,
       enableCopy = true,
       enableScrollSync = true,
@@ -450,11 +450,11 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       <Card
         className={`w-full h-screen max-h-screen flex flex-col gap-0 py-0 ${className || ""}`}
       >
-        {!hideToolbar ? (
+        {showToolbar ? (
           <div className="flex items-center justify-between p-4 border-b bg-muted/50">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold">Markdown Editor</h2>
-              {!hideWordCount ? (
+              {showWordCount ? (
                 <Badge variant="secondary" className="text-xs">
                   {markdown.length} characters
                 </Badge>
@@ -524,7 +524,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                     Syntax-Highlighted Editor
                   </h3>
                 </div>
-                {!hideMarkdownToolbar && !readOnly && (
+                {showMarkdownToolbar && !readOnly && (
                   <MarkdownToolbar actions={markdownActions} />
                 )}
                 <div className="relative flex-1 w-full bg-transparent overflow-hidden">
