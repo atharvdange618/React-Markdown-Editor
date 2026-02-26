@@ -8,6 +8,8 @@ import React, {
 } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Eye, Edit, Split, Copy, Download, Check } from "lucide-react";
 import DOMPurify from "isomorphic-dompurify";
 import { Badge } from "../ui/badge";
@@ -59,7 +61,7 @@ const defaultSyntaxColors: SyntaxHighlightColors = {
   strikethrough: "#f44747",
   strikethroughText: "#f44747",
   inlineCode: "#f92672",
-  inlineCodeText: "#f8f8f2",
+  inlineCodeText: "#4a4a4a",
   inlineCodeBg: "rgba(255,255,255,0.1)",
   link: "#569cd6",
   linkText: "#4ec9b0",
@@ -91,6 +93,10 @@ const syntaxHighlight = (text: string, colors: SyntaxHighlightColors = {}) => {
       `<span style="color:${c.heading};font-weight:bold">$1</span> <span style="color:${c.headingText};font-weight:600">$2</span>`,
     )
     .replace(
+      /\*\*\*(.*?)\*\*\*/g,
+      `<span style="color:${c.bold}">***</span><span style="color:${c.boldText};font-weight:bold;font-style:italic">$1</span><span style="color:${c.bold}">***</span>`,
+    )
+    .replace(
       /\*\*(.*?)\*\*/g,
       `<span style="color:${c.bold}">**</span><span style="color:${c.boldText};font-weight:bold">$1</span><span style="color:${c.bold}">**</span>`,
     )
@@ -113,6 +119,10 @@ const syntaxHighlight = (text: string, colors: SyntaxHighlightColors = {}) => {
     .replace(
       /\[([^\]]+)\]\(([^)]+)\)/g,
       `<span style="color:${c.link}">[</span><span style="color:${c.linkText};text-decoration:underline">$1</span><span style="color:${c.link}">](</span><span style="color:${c.linkUrl}">$2</span><span style="color:${c.link}">)</span>`,
+    )
+    .replace(
+      /^(\s*)([-*+])\s+(\[[ x]\])\s+(.+)$/gm,
+      `$1<span style="color:${c.listBullet};font-weight:bold">$2</span> <span style="color:${c.inlineCode}">$3</span> <span style="color:${c.listText}">$4</span>`,
     )
     .replace(
       /^(\s*)([-*+])\s+(.+)$/gm,
@@ -182,44 +192,58 @@ const defaultMarkdownComponents: Components = {
   p: ({ children }) => (
     <p className="mb-4 text-foreground leading-relaxed">{children}</p>
   ),
-  ul: ({ children }) => (
-    <ul className="list-disc list-inside mb-4 space-y-1 text-foreground">
-      {children}
-    </ul>
-  ),
+  ul: ({ children, className }) => {
+    if (className?.includes("contains-task-list")) {
+      return <ul className="mb-4 space-y-1 pl-0 list-none">{children}</ul>;
+    }
+    return (
+      <ul className="list-disc list-inside mb-4 space-y-1 text-foreground">
+        {children}
+      </ul>
+    );
+  },
   ol: ({ children }) => (
     <ol className="list-decimal list-inside mb-4 space-y-1 text-foreground">
       {children}
     </ol>
   ),
-  li: ({ children }) => (
-    <li className="text-foreground leading-relaxed">{children}</li>
-  ),
+  li: ({ children, className }) => {
+    if (className?.includes("task-list-item")) {
+      return (
+        <li className="flex items-center gap-2 text-foreground leading-relaxed list-none">
+          {children}
+        </li>
+      );
+    }
+    return <li className="text-foreground leading-relaxed">{children}</li>;
+  },
   blockquote: ({ children }) => (
     <blockquote className="border-l-4 border-muted-foreground/30 pl-4 py-2 mb-4 italic text-muted-foreground bg-muted/50 rounded-r">
       {children}
     </blockquote>
   ),
   code: ({ children, className }) => {
-    const isInline = !className;
-    if (isInline) {
+    const match = /language-(\w+)/.exec(className || "");
+    if (match) {
       return (
-        <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-foreground">
-          {children}
-        </code>
+        <SyntaxHighlighter
+          style={oneDark}
+          language={match[1]}
+          PreTag="div"
+          className="rounded-lg mb-4 text-sm overflow-x-auto"
+          customStyle={{ margin: 0 }}
+        >
+          {String(children).replace(/\n$/, "")}
+        </SyntaxHighlighter>
       );
     }
     return (
-      <code className="block bg-muted p-4 rounded-lg text-sm font-mono text-foreground overflow-x-auto">
+      <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-foreground">
         {children}
       </code>
     );
   },
-  pre: ({ children }) => (
-    <pre className="bg-muted p-4 rounded-lg mb-4 overflow-x-auto">
-      {children}
-    </pre>
-  ),
+  pre: ({ children }) => <>{children}</>,
   table: ({ children }) => (
     <div className="overflow-x-auto mb-4">
       <table className="min-w-full border-collapse border border-border">
@@ -325,7 +349,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     const highlightRef = useRef<HTMLDivElement>(null);
     const previewRef = useRef<HTMLDivElement>(null);
     const isScrolling = useRef<"editor" | "preview" | null>(null);
-    const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+    const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [isCopied, setIsCopied] = useState(false);
     const [isDownloaded, setIsDownloaded] = useState(false);
@@ -355,6 +379,43 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     );
 
     const markdownActions = useMarkdownActions(textareaRef, updateMarkdown);
+
+    const markdownRef = useRef(markdown);
+    markdownRef.current = markdown;
+    const updateMarkdownRef = useRef(updateMarkdown);
+    updateMarkdownRef.current = updateMarkdown;
+
+    const handleKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.ctrlKey || e.metaKey) {
+          switch (e.key) {
+            case "b":
+              e.preventDefault();
+              markdownActions.insertBold();
+              break;
+            case "i":
+              e.preventDefault();
+              markdownActions.insertItalic();
+              break;
+            case "k":
+              e.preventDefault();
+              markdownActions.insertLink();
+              break;
+            case "`":
+              e.preventDefault();
+              markdownActions.insertInlineCode();
+              break;
+            case "s":
+              if (e.shiftKey) {
+                e.preventDefault();
+                markdownActions.insertStrikethrough();
+              }
+              break;
+          }
+        }
+      },
+      [markdownActions],
+    );
 
     const handleViewModeChange = useCallback(
       (mode: "edit" | "preview" | "split") => {
@@ -456,6 +517,52 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       () => ({
         ...defaultMarkdownComponents,
         ...components,
+        input: ({
+          type,
+          checked,
+        }: React.InputHTMLAttributes<HTMLInputElement>) => {
+          if (type === "checkbox") {
+            return (
+              <input
+                type="checkbox"
+                checked={Boolean(checked)}
+                className="mr-1 mt-0.5 cursor-pointer accent-primary"
+                onChange={(e) => {
+                  const md = markdownRef.current;
+                  const upd = updateMarkdownRef.current;
+
+                  // Find all checkboxes in the rendered preview
+                  const previewContainer = e.target.closest(".prose");
+                  if (!previewContainer) return;
+
+                  const allCheckboxes = Array.from(
+                    previewContainer.querySelectorAll('input[type="checkbox"]'),
+                  );
+                  const currentIdx = allCheckboxes.indexOf(
+                    e.target as HTMLInputElement,
+                  );
+
+                  if (currentIdx === -1) return;
+
+                  let c = 0;
+                  const newMd = md.replace(
+                    /^(\s*[-*+]\s+)\[([ x])\]/gm,
+                    (match, prefix, state) => {
+                      if (c === currentIdx) {
+                        c++;
+                        return `${prefix}[${state === " " ? "x" : " "}]`;
+                      }
+                      c++;
+                      return match;
+                    },
+                  );
+                  upd(newMd);
+                }}
+              />
+            );
+          }
+          return <input type={type} checked={checked} readOnly />;
+        },
       }),
       [components],
     );
@@ -583,6 +690,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                     ref={textareaRef}
                     value={markdown}
                     onChange={handleTextChange}
+                    onKeyDown={handleKeyDown}
                     onScroll={handleEditorScroll}
                     placeholder={placeholder}
                     readOnly={readOnly}

@@ -112,7 +112,7 @@ export function useMarkdownActions(
   }, [getTextarea, update]);
 
   const insertHeading = useCallback(
-    (level: 1 | 2 | 3) => {
+    (level: 1 | 2 | 3 | 4 | 5 | 6) => {
       const ta = getTextarea();
       if (!ta) return;
       const prefix = "#".repeat(level) + " ";
@@ -137,6 +137,12 @@ export function useMarkdownActions(
     const ta = getTextarea();
     if (!ta) return;
     insertAtLineStart(ta, update, "1. ");
+  }, [getTextarea, update]);
+
+  const insertTaskList = useCallback(() => {
+    const ta = getTextarea();
+    if (!ta) return;
+    insertAtLineStart(ta, update, "- [ ] ");
   }, [getTextarea, update]);
 
   const insertCodeBlock = useCallback(() => {
@@ -187,6 +193,7 @@ export function useMarkdownActions(
     insertBlockquote,
     insertUnorderedList,
     insertOrderedList,
+    insertTaskList,
     insertCodeBlock,
     insertLink,
     insertImage,

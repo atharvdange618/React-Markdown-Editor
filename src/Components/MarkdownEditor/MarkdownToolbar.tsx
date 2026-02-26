@@ -5,8 +5,12 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  Heading4,
+  Heading5,
+  Heading6,
   List,
   ListOrdered,
+  ListChecks,
   Quote,
   Code,
   FileCode,
@@ -30,10 +34,11 @@ interface MarkdownToolbarProps {
     insertItalic: () => void;
     insertStrikethrough: () => void;
     insertInlineCode: () => void;
-    insertHeading: (level: 1 | 2 | 3) => void;
+    insertHeading: (level: 1 | 2 | 3 | 4 | 5 | 6) => void;
     insertBlockquote: () => void;
     insertUnorderedList: () => void;
     insertOrderedList: () => void;
+    insertTaskList: () => void;
     insertCodeBlock: () => void;
     insertLink: () => void;
     insertImage: () => void;
@@ -69,6 +74,21 @@ function MarkdownToolbar({ actions }: MarkdownToolbarProps) {
       title: "Heading 3",
       action: () => actions.insertHeading(3),
     },
+    {
+      icon: Heading4,
+      title: "Heading 4",
+      action: () => actions.insertHeading(4),
+    },
+    {
+      icon: Heading5,
+      title: "Heading 5",
+      action: () => actions.insertHeading(5),
+    },
+    {
+      icon: Heading6,
+      title: "Heading 6",
+      action: () => actions.insertHeading(6),
+    },
   ];
 
   const lists: ToolbarAction[] = [
@@ -81,6 +101,11 @@ function MarkdownToolbar({ actions }: MarkdownToolbarProps) {
       icon: ListOrdered,
       title: "Ordered List",
       action: actions.insertOrderedList,
+    },
+    {
+      icon: ListChecks,
+      title: "Task List",
+      action: actions.insertTaskList,
     },
   ];
 
