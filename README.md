@@ -8,6 +8,7 @@ A modern, highly-configurable, and highly-secure React markdown editor component
 
 - **Markdown Toolbar** - Built-in formatting toolbar with buttons for bold, italic, strikethrough, headings (H1-H3), lists, blockquote, code blocks, links, images, tables, and horizontal rules. Wraps selected text or inserts templates with smart cursor repositioning.
 - **Bidirectional Scroll Sync** - Proportional scroll synchronization between editor and preview panes. Scrolling either pane keeps the other in lockstep.
+- **ASCII & Diagram Support** - Precise whitespace preservation in plain text code blocks (` ``` `), ensuring text-based diagrams and ASCII art render exactly as typed without space collapsing.
 - **XSS Prevention** - Raw HTML rendering in the editor pane is secured via `isomorphic-dompurify`.
 - **Syntax Highlighting** - Fully customizable color themes for the editor pane with support for headings, bold, italic, links, code blocks, lists, tables, and more.
 - **Controlled & Uncontrolled Support** - Plug it into external state naturally like a standard input element, or let it manage its own.

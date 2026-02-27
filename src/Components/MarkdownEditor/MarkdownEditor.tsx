@@ -278,12 +278,35 @@ const defaultMarkdownComponents: Components = {
       );
     }
     return (
-      <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-foreground">
+      <code
+        className={
+          className ??
+          "bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-foreground"
+        }
+      >
         {children}
       </code>
     );
   },
-  pre: ({ children }) => <>{children}</>,
+  pre: ({ children }) => {
+    const childElement = children as React.ReactElement<{ className?: string }>;
+    const childProps = childElement?.props;
+    const hasLanguage = childProps?.className?.includes("language-");
+
+    if (hasLanguage) {
+      return <>{children}</>;
+    }
+
+    return (
+      <pre className="p-4 bg-muted/50 overflow-x-auto rounded-lg mb-4 border border-border text-sm font-mono text-foreground whitespace-pre">
+        {React.isValidElement(children)
+          ? React.cloneElement(childElement, {
+              className: "bg-transparent p-0 text-inherit text-sm font-mono",
+            } as React.HTMLAttributes<HTMLElement>)
+          : children}
+      </pre>
+    );
+  },
   table: ({ children }) => (
     <div className="overflow-x-auto mb-4">
       <table className="min-w-full border-collapse border border-border">
