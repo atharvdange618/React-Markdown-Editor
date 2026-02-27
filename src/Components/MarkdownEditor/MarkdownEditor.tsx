@@ -5,12 +5,23 @@ import React, {
   forwardRef,
   useMemo,
   useCallback,
+  useEffect,
 } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Eye, Edit, Split, Copy, Download, Check } from "lucide-react";
+import {
+  Eye,
+  Edit,
+  Split,
+  Copy,
+  Download,
+  Check,
+  Heading4,
+  Heading5,
+  Heading6,
+} from "lucide-react";
 import DOMPurify from "isomorphic-dompurify";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -18,6 +29,35 @@ import { Separator } from "../ui/separator";
 import { Card, CardContent } from "../ui/card";
 import MarkdownToolbar from "./MarkdownToolbar";
 import { useMarkdownActions } from "./useMarkdownActions";
+import { visit } from "unist-util-visit";
+import type { Node, Data } from "unist";
+import {
+  Bold,
+  Italic,
+  Strikethrough,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  ListChecks,
+} from "lucide-react";
+
+function remarkSourcePositions() {
+  return (tree: Node) => {
+    visit(tree, (node: Node) => {
+      if (node.position && node.position.start && node.position.end) {
+        node.data = node.data || {};
+        const data = node.data as Data & {
+          hProperties?: Record<string, unknown>;
+        };
+        data.hProperties = data.hProperties || {};
+        data.hProperties["data-source-start"] = node.position.start.line;
+        data.hProperties["data-source-end"] = node.position.end.line;
+      }
+    });
+  };
+}
 
 export interface SyntaxHighlightColors {
   heading?: string;
@@ -354,6 +394,13 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     const [isCopied, setIsCopied] = useState(false);
     const [isDownloaded, setIsDownloaded] = useState(false);
 
+    const [contextMenu, setContextMenu] = useState<{
+      show: boolean;
+      x: number;
+      y: number;
+      sourceLine?: number;
+    }>({ show: false, x: 0, y: 0 });
+
     useImperativeHandle(ref, () => ({
       focus: () => {
         textareaRef.current?.focus();
@@ -531,7 +578,6 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                   const md = markdownRef.current;
                   const upd = updateMarkdownRef.current;
 
-                  // Find all checkboxes in the rendered preview
                   const previewContainer = e.target.closest(".prose");
                   if (!previewContainer) return;
 
@@ -567,10 +613,226 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       [components],
     );
 
+    const handleContextMenu = useCallback(
+      (e: React.MouseEvent) => {
+        if (viewMode === "preview") return;
+
+        const target = e.target as HTMLElement;
+        const isHeader = target.closest(".p-4.border-b.bg-muted\\/50");
+        if (isHeader) return;
+
+        e.preventDefault();
+
+        let sourceLine: number | undefined;
+        if (viewMode === "split") {
+          const mappedEl = target.closest("[data-source-start]");
+          if (mappedEl) {
+            const startLine = mappedEl.getAttribute("data-source-start");
+            if (startLine) {
+              sourceLine = parseInt(startLine, 10);
+            }
+          }
+        }
+
+        setContextMenu({
+          show: true,
+          x: e.clientX,
+          y: e.clientY,
+          sourceLine,
+        });
+      },
+      [viewMode],
+    );
+
+    const closeContextMenu = useCallback(() => {
+      setContextMenu((prev) => ({ ...prev, show: false }));
+    }, []);
+
+    useEffect(() => {
+      if (contextMenu.show) {
+        window.addEventListener("click", closeContextMenu);
+        return () => window.removeEventListener("click", closeContextMenu);
+      }
+    }, [contextMenu.show, closeContextMenu]);
+
+    const highlightedHtml = useMemo(
+      () => syntaxHighlight(markdown, syntaxColors),
+      [markdown, syntaxColors],
+    );
+
     return (
       <Card
-        className={`w-full h-full flex flex-col gap-0 py-0 ${className || ""}`}
+        className={`w-full h-full flex flex-col gap-0 py-0 relative ${className || ""}`}
+        onContextMenu={handleContextMenu}
       >
+        {contextMenu.show && (
+          <div
+            className="fixed z-50 min-w-[150px] bg-popover text-popover-foreground rounded-md border shadow-md p-1 flex flex-col"
+            style={{ top: contextMenu.y, left: contextMenu.x }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-b mb-1">
+              {contextMenu.sourceLine
+                ? `Line ${contextMenu.sourceLine}`
+                : "Format"}
+            </div>
+
+            <div className="flex gap-1 p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => {
+                  markdownActions.insertBold();
+                  closeContextMenu();
+                }}
+                title="Bold"
+              >
+                <Bold className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => {
+                  markdownActions.insertItalic();
+                  closeContextMenu();
+                }}
+                title="Italic"
+              >
+                <Italic className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => {
+                  markdownActions.insertStrikethrough();
+                  closeContextMenu();
+                }}
+                title="Strikethrough"
+              >
+                <Strikethrough className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <Separator className="my-1" />
+
+            <div className="grid grid-cols-3 gap-1 p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-full p-0 flex justify-center"
+                onClick={() => {
+                  markdownActions.insertHeading(1);
+                  closeContextMenu();
+                }}
+                title="H1"
+              >
+                <Heading1 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-full p-0 flex justify-center"
+                onClick={() => {
+                  markdownActions.insertHeading(2);
+                  closeContextMenu();
+                }}
+                title="H2"
+              >
+                <Heading2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-full p-0 flex justify-center"
+                onClick={() => {
+                  markdownActions.insertHeading(3);
+                  closeContextMenu();
+                }}
+                title="H3"
+              >
+                <Heading3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-full p-0 flex justify-center"
+                onClick={() => {
+                  markdownActions.insertHeading(4);
+                  closeContextMenu();
+                }}
+                title="H4"
+              >
+                <Heading4 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-full p-0 flex justify-center"
+                onClick={() => {
+                  markdownActions.insertHeading(5);
+                  closeContextMenu();
+                }}
+                title="H5"
+              >
+                <Heading5 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-full p-0 flex justify-center"
+                onClick={() => {
+                  markdownActions.insertHeading(6);
+                  closeContextMenu();
+                }}
+                title="H6"
+              >
+                <Heading6 className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <Separator className="my-1" />
+
+            <div className="flex flex-col gap-0.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 justify-start px-2 text-xs"
+                onClick={() => {
+                  markdownActions.insertUnorderedList();
+                  closeContextMenu();
+                }}
+              >
+                <List className="h-3 w-3 mr-2" /> Unordered List
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 justify-start px-2 text-xs"
+                onClick={() => {
+                  markdownActions.insertOrderedList();
+                  closeContextMenu();
+                }}
+              >
+                <ListOrdered className="h-3 w-3 mr-2" /> Ordered List
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 justify-start px-2 text-xs"
+                onClick={() => {
+                  markdownActions.insertTaskList();
+                  closeContextMenu();
+                }}
+              >
+                <ListChecks className="h-3 w-3 mr-2" /> Task List
+              </Button>
+            </div>
+          </div>
+        )}
+
         {showToolbar ? (
           <div className="flex items-center justify-between p-4 border-b bg-muted/50">
             <div className="flex items-center gap-2">
@@ -666,11 +928,6 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                   viewMode === "split" ? "w-1/2" : "w-full"
                 } border-r h-full min-h-0 flex flex-col ${editorClassName || ""}`}
               >
-                <div className="p-4 border-b bg-muted/30">
-                  <h3 className="font-medium text-sm text-muted-foreground">
-                    Syntax-Highlighted Editor
-                  </h3>
-                </div>
                 {showMarkdownToolbar && !readOnly && (
                   <MarkdownToolbar actions={markdownActions} />
                 )}
@@ -683,7 +940,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                       msOverflowStyle: "none",
                     }}
                     dangerouslySetInnerHTML={{
-                      __html: syntaxHighlight(markdown, syntaxColors),
+                      __html: highlightedHtml,
                     }}
                   />
                   <textarea
@@ -710,8 +967,8 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
               <div
                 className={`${viewMode === "split" ? "w-1/2" : "w-full"} h-full min-h-0 flex flex-col ${previewClassName || ""}`}
               >
-                <div className="p-4 border-b bg-muted/30">
-                  <h3 className="font-medium text-sm text-muted-foreground">
+                <div className="p-4 border-b bg-muted/30 flex justify-between items-center">
+                  <h3 className="font-medium text-sm text-muted-foreground inline-block">
                     Preview
                   </h3>
                 </div>
@@ -723,7 +980,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                   <div className="prose prose-slate dark:prose-invert max-w-none">
                     <ReactMarkdown
                       components={memoizedComponents}
-                      remarkPlugins={[remarkGfm]}
+                      remarkPlugins={[remarkGfm, remarkSourcePositions]}
                     >
                       {markdown}
                     </ReactMarkdown>

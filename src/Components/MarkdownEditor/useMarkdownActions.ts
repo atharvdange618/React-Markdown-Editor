@@ -1,4 +1,4 @@
-import { useCallback, type RefObject } from "react";
+import { useCallback, useMemo, type RefObject } from "react";
 
 type UpdateFn = (value: string) => void;
 
@@ -8,8 +8,23 @@ function insertText(
   before: string,
   after: string,
   placeholder: string,
+  targetLine?: number,
 ) {
-  const { selectionStart, selectionEnd, value } = textarea;
+  let { selectionStart, selectionEnd } = textarea;
+  const value = textarea.value;
+
+  if (targetLine !== undefined) {
+    const lines = value.split("\n");
+    if (targetLine > 0 && targetLine <= lines.length) {
+      let pos = 0;
+      for (let i = 0; i < targetLine - 1; i++) {
+        pos += lines[i].length + 1;
+      }
+      selectionStart = pos;
+      selectionEnd = pos + lines[targetLine - 1].length;
+    }
+  }
+
   const selected = value.substring(selectionStart, selectionEnd);
   const content = selected || placeholder;
 
@@ -34,20 +49,48 @@ function insertAtLineStart(
   textarea: HTMLTextAreaElement,
   update: UpdateFn,
   prefix: string,
+  targetLine?: number,
 ) {
-  const { selectionStart, value } = textarea;
+  let { selectionStart } = textarea;
+  const value = textarea.value;
+
+  if (targetLine !== undefined) {
+    const lines = value.split("\n");
+    if (targetLine > 0 && targetLine <= lines.length) {
+      let pos = 0;
+      for (let i = 0; i < targetLine - 1; i++) {
+        pos += lines[i].length + 1;
+      }
+      selectionStart = pos;
+    }
+  }
+
   const lineStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
 
+  let currentLineText = value.substring(lineStart);
+  let removeLength = 0;
+  const newlineIdx = currentLineText.indexOf("\n");
+  if (newlineIdx !== -1) {
+    currentLineText = currentLineText.substring(0, newlineIdx);
+  }
+
+  const headingMatch = currentLineText.match(/^(#{1,6})\s/);
+  if (prefix.startsWith("#") && headingMatch) {
+    removeLength = headingMatch[0].length;
+  }
+
   const newValue =
-    value.substring(0, lineStart) + prefix + value.substring(lineStart);
+    value.substring(0, lineStart) +
+    prefix +
+    value.substring(lineStart + removeLength);
 
   update(newValue);
 
   requestAnimationFrame(() => {
     textarea.focus();
     textarea.setSelectionRange(
-      selectionStart + prefix.length,
-      selectionStart + prefix.length,
+      selectionStart + prefix.length - removeLength,
+      selectionStart + prefix.length - removeLength,
     );
   });
 }
@@ -57,8 +100,22 @@ function insertBlock(
   update: UpdateFn,
   block: string,
   cursorOffset: number,
+  targetLine?: number,
 ) {
-  const { selectionStart, selectionEnd, value } = textarea;
+  let { selectionStart, selectionEnd } = textarea;
+  const value = textarea.value;
+
+  if (targetLine !== undefined) {
+    const lines = value.split("\n");
+    if (targetLine > 0 && targetLine <= lines.length) {
+      let pos = 0;
+      for (let i = 0; i < targetLine - 1; i++) {
+        pos += lines[i].length + 1;
+      }
+      selectionStart = pos;
+      selectionEnd = pos + lines[targetLine - 1].length;
+    }
+  }
 
   const needsNewlineBefore =
     selectionStart > 0 && value[selectionStart - 1] !== "\n";
@@ -87,117 +144,188 @@ export function useMarkdownActions(
     return textareaRef.current;
   }, [textareaRef]);
 
-  const insertBold = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    insertText(ta, update, "**", "**", "bold text");
-  }, [getTextarea, update]);
-
-  const insertItalic = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    insertText(ta, update, "*", "*", "italic text");
-  }, [getTextarea, update]);
-
-  const insertStrikethrough = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    insertText(ta, update, "~~", "~~", "strikethrough text");
-  }, [getTextarea, update]);
-
-  const insertInlineCode = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    insertText(ta, update, "`", "`", "code");
-  }, [getTextarea, update]);
-
-  const insertHeading = useCallback(
-    (level: 1 | 2 | 3 | 4 | 5 | 6) => {
+  const insertBold = useCallback(
+    (targetLine?: number) => {
       const ta = getTextarea();
       if (!ta) return;
-      const prefix = "#".repeat(level) + " ";
-      insertAtLineStart(ta, update, prefix);
+      insertText(ta, update, "**", "**", "bold text", targetLine);
     },
     [getTextarea, update],
   );
 
-  const insertBlockquote = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    insertAtLineStart(ta, update, "> ");
-  }, [getTextarea, update]);
+  const insertItalic = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      insertText(ta, update, "*", "*", "italic text", targetLine);
+    },
+    [getTextarea, update],
+  );
 
-  const insertUnorderedList = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    insertAtLineStart(ta, update, "- ");
-  }, [getTextarea, update]);
+  const insertStrikethrough = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      insertText(ta, update, "~~", "~~", "strikethrough text", targetLine);
+    },
+    [getTextarea, update],
+  );
 
-  const insertOrderedList = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    insertAtLineStart(ta, update, "1. ");
-  }, [getTextarea, update]);
+  const insertInlineCode = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      insertText(ta, update, "`", "`", "code", targetLine);
+    },
+    [getTextarea, update],
+  );
 
-  const insertTaskList = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    insertAtLineStart(ta, update, "- [ ] ");
-  }, [getTextarea, update]);
+  const insertHeading = useCallback(
+    (level: 1 | 2 | 3 | 4 | 5 | 6, targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      const prefix = "#".repeat(level) + " ";
+      insertAtLineStart(ta, update, prefix, targetLine);
+    },
+    [getTextarea, update],
+  );
 
-  const insertCodeBlock = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    const block = "```\ncode here\n```\n";
-    insertBlock(ta, update, block, 4);
-  }, [getTextarea, update]);
+  const insertBlockquote = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      insertAtLineStart(ta, update, "> ", targetLine);
+    },
+    [getTextarea, update],
+  );
 
-  const insertLink = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    const { selectionStart, selectionEnd, value } = ta;
-    const selected = value.substring(selectionStart, selectionEnd);
-    if (selected) {
-      insertText(ta, update, "[", "](url)", "");
-    } else {
-      insertText(ta, update, "[", "](url)", "link text");
-    }
-  }, [getTextarea, update]);
+  const insertUnorderedList = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      insertAtLineStart(ta, update, "- ", targetLine);
+    },
+    [getTextarea, update],
+  );
 
-  const insertImage = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    insertText(ta, update, "![", "](image-url)", "alt text");
-  }, [getTextarea, update]);
+  const insertOrderedList = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      insertAtLineStart(ta, update, "1. ", targetLine);
+    },
+    [getTextarea, update],
+  );
 
-  const insertHorizontalRule = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    insertBlock(ta, update, "\n---\n\n", 5);
-  }, [getTextarea, update]);
+  const insertTaskList = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      insertAtLineStart(ta, update, "- [ ] ", targetLine);
+    },
+    [getTextarea, update],
+  );
 
-  const insertTable = useCallback(() => {
-    const ta = getTextarea();
-    if (!ta) return;
-    const table =
-      "| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n";
-    insertBlock(ta, update, table, 2);
-  }, [getTextarea, update]);
+  const insertCodeBlock = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      const block = "```\ncode here\n```\n";
+      insertBlock(ta, update, block, 4, targetLine);
+    },
+    [getTextarea, update],
+  );
 
-  return {
-    insertBold,
-    insertItalic,
-    insertStrikethrough,
-    insertInlineCode,
-    insertHeading,
-    insertBlockquote,
-    insertUnorderedList,
-    insertOrderedList,
-    insertTaskList,
-    insertCodeBlock,
-    insertLink,
-    insertImage,
-    insertHorizontalRule,
-    insertTable,
-  };
+  const insertLink = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      let { selectionStart, selectionEnd } = ta;
+      const value = ta.value;
+
+      if (targetLine !== undefined) {
+        const lines = value.split("\n");
+        if (targetLine > 0 && targetLine <= lines.length) {
+          let pos = 0;
+          for (let i = 0; i < targetLine - 1; i++) {
+            pos += lines[i].length + 1;
+          }
+          selectionStart = pos;
+          selectionEnd = pos + lines[targetLine - 1].length;
+        }
+      }
+
+      const selected = value.substring(selectionStart, selectionEnd);
+      if (selected) {
+        insertText(ta, update, "[", "](url)", "", targetLine);
+      } else {
+        insertText(ta, update, "[", "](url)", "link text", targetLine);
+      }
+    },
+    [getTextarea, update],
+  );
+
+  const insertImage = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      insertText(ta, update, "![", "](image-url)", "alt text", targetLine);
+    },
+    [getTextarea, update],
+  );
+
+  const insertHorizontalRule = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      insertBlock(ta, update, "\n---\n\n", 5, targetLine);
+    },
+    [getTextarea, update],
+  );
+
+  const insertTable = useCallback(
+    (targetLine?: number) => {
+      const ta = getTextarea();
+      if (!ta) return;
+      const table =
+        "| Header 1 | Header 2 |\n| -------- | -------- |\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n";
+      insertBlock(ta, update, table, 2, targetLine);
+    },
+    [getTextarea, update],
+  );
+
+  return useMemo(
+    () => ({
+      insertBold,
+      insertItalic,
+      insertStrikethrough,
+      insertInlineCode,
+      insertHeading,
+      insertBlockquote,
+      insertUnorderedList,
+      insertOrderedList,
+      insertTaskList,
+      insertCodeBlock,
+      insertLink,
+      insertImage,
+      insertHorizontalRule,
+      insertTable,
+    }),
+    [
+      insertBold,
+      insertItalic,
+      insertStrikethrough,
+      insertInlineCode,
+      insertHeading,
+      insertBlockquote,
+      insertUnorderedList,
+      insertOrderedList,
+      insertTaskList,
+      insertCodeBlock,
+      insertLink,
+      insertImage,
+      insertHorizontalRule,
+      insertTable,
+    ],
+  );
 }

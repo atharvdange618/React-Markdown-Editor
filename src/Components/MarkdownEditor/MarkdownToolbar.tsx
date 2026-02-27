@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Bold,
   Italic,
@@ -135,9 +136,9 @@ function MarkdownToolbar({ actions }: MarkdownToolbarProps) {
           {groupIndex > 0 && (
             <Separator orientation="vertical" className="h-5 mx-1" />
           )}
-          {group.map((item, i) => (
+          {group.map((item) => (
             <Button
-              key={i}
+              key={item.title}
               variant="ghost"
               size="sm"
               onClick={(e) => {
@@ -157,4 +158,4 @@ function MarkdownToolbar({ actions }: MarkdownToolbarProps) {
   );
 }
 
-export default MarkdownToolbar;
+export default React.memo(MarkdownToolbar);
