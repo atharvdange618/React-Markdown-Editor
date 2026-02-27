@@ -134,6 +134,37 @@ Via `forwardRef`, parents can trigger the following imperatives on the editor:
 - `focus()`: Forces browser focus onto the underlying `<textarea>`.
 - `getValue()`: Retrieves the current internal markdown string, particularly useful if you run uncontrolled mode and just want the value on submit.
 
+## Roadmap
+
+- **Table of Contents Sidebar**
+  - Auto-generated from headings
+  - Clickable navigation
+  - Collapsible sections
+  - Sticky/floating mode
+- **Reading Time Estimate**
+  - Based on word count
+  - Configurable WPM
+- **Selection Word Count**
+  - Character/word/line count
+- **Minimap (like VS Code)**
+  - Document overview
+  - Quick scroll navigation
+- **Export to Multiple Formats**
+  - PDF with styling
+  - Styled HTML
+  - Plain text
+  - DOCX
+- **Multiple Themes**
+  - Predefined color schemes (Monokai, Solarized, etc.)
+- **Find & Replace**
+  - Search with regex support
+  - Replace all/one at a time
+  - Case sensitivity toggle
+  - Highlight matches in editor
+- **Link Preview Cards**
+  - Hover over links for preview
+  - Unfurl metadata (title, description, image)
+
 ## Contributing
 
 Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for detailed information on how to get started, development workflow, and coding guidelines.
