@@ -16,7 +16,6 @@ import {
   Edit,
   Split,
   Copy,
-  Download,
   Check,
   Heading4,
   Heading5,
@@ -29,6 +28,9 @@ import { Separator } from "../ui/separator";
 import { Card, CardContent } from "../ui/card";
 import MarkdownToolbar from "./MarkdownToolbar";
 import { useMarkdownActions } from "./useMarkdownActions";
+import { calculateReadingTime, getSelectionStats } from "../../lib/utils";
+import ExportMenu from "./ExportMenu";
+import type { ExportFormat } from "../../lib/exportUtils";
 import { visit } from "unist-util-visit";
 import type { Node, Data } from "unist";
 import {
@@ -353,8 +355,11 @@ export interface MarkdownEditorProps {
   previewClassName?: string;
   showToolbar?: boolean;
   showWordCount?: boolean;
+  showReadingTime?: boolean;
+  wordsPerMinute?: number;
+  showSelectionCount?: boolean;
   showMarkdownToolbar?: boolean;
-  enableDownload?: boolean;
+  enableDownload?: boolean | ExportFormat[];
   enableCopy?: boolean;
   enableScrollSync?: boolean;
   placeholder?: string;
@@ -383,6 +388,9 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       previewClassName,
       showToolbar = true,
       showWordCount = true,
+      showReadingTime = true,
+      wordsPerMinute = 200,
+      showSelectionCount = true,
       showMarkdownToolbar = true,
       enableDownload = true,
       enableCopy = true,
@@ -415,7 +423,6 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
     const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [isCopied, setIsCopied] = useState(false);
-    const [isDownloaded, setIsDownloaded] = useState(false);
 
     const [contextMenu, setContextMenu] = useState<{
       show: boolean;
@@ -423,6 +430,12 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       y: number;
       sourceLine?: number;
     }>({ show: false, x: 0, y: 0 });
+
+    const [selectionInfo, setSelectionInfo] = useState<{
+      start: number;
+      end: number;
+      text: string;
+    } | null>(null);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -447,6 +460,21 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       },
       [updateMarkdown],
     );
+
+    const handleTextSelect = useCallback(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = markdown.substring(start, end);
+
+      if (start !== end && text.length > 0) {
+        setSelectionInfo({ start, end, text });
+      } else {
+        setSelectionInfo(null);
+      }
+    }, [markdown]);
 
     const markdownActions = useMarkdownActions(textareaRef, updateMarkdown);
 
@@ -566,21 +594,6 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
       } catch (err) {
         console.error("Failed to copy:", err);
       }
-    }, [markdown]);
-
-    const downloadMarkdown = useCallback(() => {
-      const blob = new Blob([markdown], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "document.md";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      setIsDownloaded(true);
-      setTimeout(() => setIsDownloaded(false), 2000);
     }, [markdown]);
 
     const memoizedComponents = useMemo(
@@ -865,6 +878,30 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                   {markdown.length} characters
                 </Badge>
               ) : null}
+              {showReadingTime ? (
+                <Badge variant="outline" className="text-xs">
+                  {(() => {
+                    const { minutes } = calculateReadingTime(
+                      markdown,
+                      wordsPerMinute,
+                    );
+                    return minutes < 1
+                      ? "< 1 min read"
+                      : `~${minutes} min read`;
+                  })()}
+                </Badge>
+              ) : null}
+              {showSelectionCount && selectionInfo && (
+                <Badge
+                  variant="default"
+                  className="text-xs shadow-md animate-in fade-in slide-in-from-left-2 duration-200"
+                >
+                  {(() => {
+                    const stats = getSelectionStats(selectionInfo.text);
+                    return `${stats.characters} char${stats.characters !== 1 ? "s" : ""} · ${stats.words} word${stats.words !== 1 ? "s" : ""} · ${stats.lines} line${stats.lines !== 1 ? "s" : ""}`;
+                  })()}
+                </Badge>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -921,23 +958,10 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
               ) : null}
 
               {enableDownload ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={downloadMarkdown}
-                  className={
-                    isDownloaded
-                      ? "text-green-600 dark:text-green-500 border-green-600 dark:border-green-500"
-                      : ""
-                  }
-                >
-                  {isDownloaded ? (
-                    <Check className="w-4 h-4 mr-1" />
-                  ) : (
-                    <Download className="w-4 h-4 mr-1" />
-                  )}
-                  {isDownloaded ? "Downloaded!" : "Download"}
-                </Button>
+                <ExportMenu
+                  markdown={markdown}
+                  enabledFormats={enableDownload}
+                />
               ) : null}
             </div>
           </div>
@@ -972,6 +996,8 @@ const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
                     onScroll={handleEditorScroll}
+                    onMouseUp={handleTextSelect}
+                    onKeyUp={handleTextSelect}
                     placeholder={placeholder}
                     readOnly={readOnly}
                     maxLength={maxLength}
